@@ -197,7 +197,7 @@ class Attachment(models.Model):
     def __unicode__(self):
         return self.title or self.file_name()
 
-    def save(self, force_insert=False, force_update=False):
+    def save(self, force_insert=False, force_update=False, **kwargs):
         # Ensure this slug is unique amongst attachments attached to this object
         queryset = Attachment.objects.filter(
             content_type=self.content_type, object_id=self.object_id)
