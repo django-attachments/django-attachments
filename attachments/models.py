@@ -1,4 +1,7 @@
+import tempfile, urllib2, shutil
+
 from django.db import models, connection
+from django.core.files import File
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes import generic
 from django.contrib.auth.models import User
@@ -238,10 +241,29 @@ class Attachment(models.Model):
         for field, value in kwargs_dict.items():
             setattr(copy, field, value)
 
+        try:
+            path = self.file.path
+        except NotImplementedError:
+            # Not a local file, download it to copy it.
+            # The file system backend doesn't support absolute paths. DL the file.
+            tmp_dir = tempfile.mkdtemp()
+            _, name = os.path.split(self.file.name)
+            path = os.path.join(tmp_dir, name)
+            with open(path, 'w') as local_f:
+                try:
+                    remote_f = urllib2.urlopen(self.file.url)
+                except IOError:
+                    # Possible S3 propogation delay problem. Give it another try
+                    remote_f = urllib2.urlopen(self.file.url)
+                shutil.copyfileobj(remote_f, local_f)
+        else:
+            local_f = self.file
+
         if deepcopy and self.file:
-            copy.file.save(self.file_name(), self.file)
+            with open(path) as local_f:
+                copy.file.save(self.file_name(), File(local_f))
         elif self.file:
-            copy.file = file
+            copy.file = self.file
 
         copy.save()
         return copy
