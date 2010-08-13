@@ -1,3 +1,5 @@
+from __future__ import with_statement
+
 import tempfile, urllib2, shutil
 
 from django.db import models, connection
