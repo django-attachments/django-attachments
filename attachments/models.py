@@ -243,6 +243,12 @@ class Attachment(models.Model):
         for field, value in kwargs_dict.items():
             setattr(copy, field, value)
 
+        # Handle empty files and shallow copies.
+        if not deepcopy or not self.file:
+            copy.file = self.file
+            copy.save()
+            return copy
+
         try:
             path = self.file.path
         except NotImplementedError:
@@ -261,12 +267,8 @@ class Attachment(models.Model):
         else:
             local_f = self.file
 
-        if deepcopy and self.file:
-            with open(path) as local_f:
-                copy.file.save(self.file_name(), File(local_f))
-        elif self.file:
-            copy.file = self.file
-
+        with open(path) as local_f:
+            copy.file.save(self.file_name(), File(local_f))
         copy.save()
         return copy
 
