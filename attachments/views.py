@@ -82,8 +82,8 @@ def delete_attachment(request, attachment_id, redirect=None):
         return HttpResponse(content, content_type='application/json')
 
 @login_required
-def list_attachments(request, content_type, object_id,
-                   template_name='attachments/list_attachments.html'):
+def list_attachments(request, content_type, object_id, order_by=None,
+                     template_name='attachments/list_attachments.html'):
     object_type = get_object_or_404(ContentType, id = int(content_type))
     try:
         object = object_type.get_object_for_this_type(pk=int(object_id))
@@ -91,6 +91,10 @@ def list_attachments(request, content_type, object_id,
         raise Http404
 
     attachments = Attachment.objects.attachments_for_object(object)
+
+    if order_by:
+        attachments = attachments.order_by(*order_by)
+
     for media_type in request.accepted_types:
         if media_type == 'application/json':
             data = serializers.serialize('json', attachments)
