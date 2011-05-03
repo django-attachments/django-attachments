@@ -254,22 +254,19 @@ class Attachment(models.Model):
         except NotImplementedError:
             # Not a local file, download it to copy it.
             # The file system backend doesn't support absolute paths. DL the file.
-            tmp_dir = tempfile.mkdtemp()
-            _, name = os.path.split(self.file.name)
-            path = os.path.join(tmp_dir, name)
-            with open(path, 'w') as local_f:
-                try:
-                    remote_f = urllib2.urlopen(self.file.url)
-                except IOError:
-                    # Possible S3 propogation delay problem. Give it another try
-                    remote_f = urllib2.urlopen(self.file.url)
-                shutil.copyfileobj(remote_f, local_f)
+            try:
+                remote_f = urllib2.urlopen(self.file.url)
+            except IOError:
+                # Possible S3 propogation delay problem. Give it another try
+                remote_f = urllib2.urlopen(self.file.url)
+            local_f = tempfile.NamedTemporaryFile()
+            shutil.copyfileobj(remote_f, local_f)
         else:
-            local_f = self.file
+            local_f = open(path)
 
-        with open(path) as local_f:
-            copy.file.save(self.file_name(), File(local_f))
+        copy.file.save(self.file_name(), File(local_f))
         copy.save()
+        local_f.close()
         return copy
 
 class TestModel(models.Model):
