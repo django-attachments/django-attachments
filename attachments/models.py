@@ -8,8 +8,6 @@ from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes import generic
 from django.contrib.auth.models import User
 from django.conf import settings
-from django.utils import encoding
-from django.utils.http import urlquote
 from django.utils.translation import ugettext_lazy as _
 from django.core.exceptions import ImproperlyConfigured
 
@@ -153,7 +151,7 @@ class AttachmentManager(models.Manager):
         attachments = self.attachments_for_object(from_object)
 
         for attachment in attachments:
-            copy = attachment.copy(to_object, deepcopy)
+            attachment.copy(to_object, deepcopy)
 
 
 class Attachment(models.Model):
@@ -180,7 +178,7 @@ class Attachment(models.Model):
     file = models.FileField(_("file"), upload_to=get_attachment_dir,
                             max_length=255)
     content_type = models.ForeignKey(ContentType)
-    object_id = models.PositiveIntegerField()
+    object_id = models.PositiveIntegerField(db_index=True)
     content_object = generic.GenericForeignKey("content_type", "object_id")
     attached_timestamp = models.DateTimeField(_("date attached"),
                                               default=datetime.now)
