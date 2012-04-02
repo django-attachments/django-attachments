@@ -262,7 +262,9 @@ class Attachment(models.Model):
         else:
             local_f = open(path)
 
-        copy.file.save(self.file_name(), File(local_f))
+        new_file = File(local_f)
+        new_file.seek(0)
+        copy.file.save(self.file_name(), new_file)
         copy.save()
         local_f.close()
         return copy
