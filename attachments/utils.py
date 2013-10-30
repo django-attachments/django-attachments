@@ -1,17 +1,16 @@
 from django.template.defaultfilters import slugify
+from django.core.exceptions import ImproperlyConfigured
 
 import re
 
-def unique_slugify(instance, value, slug_field_name='slug', queryset=None,
-                   slug_separator='-'):
+
+def set_slug_field(
+        instance, value, slug_field_name='slug', slug_separator='-'):
     """
     Calculates a unique slug of ``value`` for an instance.
 
     ``slug_field_name`` should be a string matching the name of the field to
     store the slug in (and the field to check against for uniqueness).
-
-    ``queryset`` usually doesn't need to be explicitly provided - it'll default
-    to using the ``.all()`` queryset from the model's default manager.
 
     from http://www.djangosnippets.org/snippets/690/
     """
@@ -26,27 +25,8 @@ def unique_slugify(instance, value, slug_field_name='slug', queryset=None,
     if slug_len:
         slug = slug[:slug_len]
     slug = _slug_strip(slug, slug_separator)
-    original_slug = slug
-
-    # Create a queryset, excluding the current instance.
-    if not queryset:
-        queryset = instance.__class__._default_manager.all()
-        if instance.pk:
-            queryset = queryset.exclude(pk=instance.pk)
-
-    # Find a unique slug. If one matches, at '-2' to the end and try again
-    # (then '-3', etc).
-    next = 2
-    while not slug or queryset.filter(**{slug_field_name: slug}):
-        slug = original_slug
-        end = '-%s' % next
-        if slug_len and len(slug) + len(end) > slug_len:
-            slug = slug[:slug_len-len(end)]
-            slug = _slug_strip(slug, slug_separator)
-        slug = '%s%s' % (slug, end)
-        next += 1
-
     setattr(instance, slug_field.attname, slug)
+
 
 def _slug_strip(value, separator=None):
     """
@@ -63,6 +43,7 @@ def _slug_strip(value, separator=None):
         value = re.sub('%s+' % re_sep, separator, value)
     return re.sub(r'^%s+|%s+$' % (re_sep, re_sep), '', value)
 
+
 def get_callable_from_string(path):
     """
     Gets a callable from a string representing an import
@@ -74,10 +55,14 @@ def get_callable_from_string(path):
     try:
         mod = __import__(module, globals(), locals(), [attr])
     except ImportError, e:
-        raise ImproperlyConfigured, 'Error importing callable %s: "%s"' % (module, e)
+        raise ImproperlyConfigured(
+            'Error importing callable %s: "%s"' % (module, e),
+        )
     try:
         func = getattr(mod, attr)
     except AttributeError:
-        raise ImproperlyConfigured, 'Module "%s" does not define a "%s" callable' % (module, attr)
+        raise ImproperlyConfigured(
+            'Module "%s" does not define a "%s" callable' % (module, attr),
+        )
 
     return func
