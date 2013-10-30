@@ -194,16 +194,14 @@ class AttachmentManager(models.Manager):
 
         attachments = self.attachments_for_object(from_object)
 
-        new_attachments = []
-        for attachment in attachments:
-            new_attachments.append(
-                attachment.copy(
-                    to_object,
-                    deepcopy,
-                    save_attachments,
-                ),
+        return [
+            attachment.copy(
+                to_object,
+                deepcopy,
+                save_attachments,
             )
-        return new_attachments
+            for attachment in attachments
+        ]
 
 
 class Attachment(models.Model):
