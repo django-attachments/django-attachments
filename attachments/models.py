@@ -1,6 +1,8 @@
 from __future__ import with_statement
 
-import tempfile, urllib2, shutil
+import tempfile
+import urllib2
+import shutil
 
 from django.db import models, connection
 from django.core.files import File
@@ -17,13 +19,14 @@ import os.path
 from datetime import datetime
 
 import directory_schemes
-from utils import get_callable_from_string, unique_slugify
+from utils import get_callable_from_string, set_slug_field
 
 # Get relative media path
 try:
     ATTACHMENT_DIR = settings.ATTACHMENT_DIR
 except:
     ATTACHMENT_DIR = "attachments"
+
 
 class AttachmentManager(models.Manager):
     """
@@ -32,9 +35,12 @@ class AttachmentManager(models.Manager):
 
     def _generate_object_kwarg_dict(self, content_object, **kwargs):
         """
-        Generates the most comment keyword arguments for a given ``content_object``.
+        Generates the most comment keyword arguments for a given
+        ``content_object``.
         """
-        kwargs['content_type'] = ContentType.objects.get_for_model(content_object)
+        kwargs['content_type'] = ContentType.objects.get_for_model(
+            content_object,
+        )
         try:
             kwargs['object_id'] = content_object.pk
         except AttributeError:
@@ -45,13 +51,19 @@ class AttachmentManager(models.Manager):
         """
         A simple wrapper around ``create`` for a given ``content_object``.
         """
-        return self.create(**self._generate_object_kwarg_dict(content_object, **kwargs))
+        return self.create(
+            **self._generate_object_kwarg_dict(content_object, **kwargs)
+        )
 
-    def attachments_for_object(self, content_object, file_name=None, title=None, **kwargs):
+    def attachments_for_object(
+            self, content_object, file_name=None, title=None, **kwargs):
         """
-        Prepopulates a QuerySet with all attachments related to the given ``content_object``.
+        Prepopulates a QuerySet with all attachments related to the given
+        ``content_object``.
         """
-        query = self.filter(**self._generate_object_kwarg_dict(content_object, **kwargs))
+        query = self.filter(
+            **self._generate_object_kwarg_dict(content_object, **kwargs)
+        )
         if file_name:
             query = query.filter(file__iendswith=file_name)
         if title:
@@ -59,12 +71,21 @@ class AttachmentManager(models.Manager):
 
         return query
 
-    def _get_usage(self, model, counts=False, min_count=None, extra_joins=None, extra_criteria=None, params=None):
+    def _get_usage(
+        self,
+        model,
+        counts=False,
+        min_count=None,
+        extra_joins=None,
+        extra_criteria=None,
+        params=None,
+    ):
         """
         Perform the custom SQL query for ``usage_for_model`` and
         ``usage_for_queryset``.
         """
-        if min_count is not None: counts = True
+        if min_count is not None:
+            counts = True
 
         model_table = qn(model._meta.db_table)
         model_pk = '%s.%s' % (model_table, qn(model._meta.pk.column))
@@ -73,7 +94,10 @@ class AttachmentManager(models.Manager):
         field_cols = [field.attname for field in self.model._meta.local_fields]
         quoted_field_cols = [qn(col) for col in field_cols]
         attachment = qn(self.model._meta.db_table)
-        table_field_cols = ['%s.%s' % (attachment, col) for col in quoted_field_cols]
+        table_field_cols = [
+            '%s.%s' % (attachment, col)
+            for col in quoted_field_cols
+        ]
         query = """
         SELECT DISTINCT %(fields)s%(count_sql)s
         FROM
@@ -100,7 +124,14 @@ class AttachmentManager(models.Manager):
             params.append(min_count)
 
         cursor = connection.cursor()
-        cursor.execute(query % (extra_joins, extra_criteria, min_count_sql), params)
+        cursor.execute(
+            query % (
+                extra_joins,
+                extra_criteria,
+                min_count_sql,
+            ),
+            params,
+        )
         attachments = []
         for row in cursor.fetchall():
             if counts:
@@ -137,9 +168,22 @@ class AttachmentManager(models.Manager):
             extra_criteria = 'AND %s' % where
         else:
             extra_criteria = ''
-        return self._get_usage(queryset.model, counts, min_count, extra_joins, extra_criteria, params)
+        return self._get_usage(
+            queryset.model,
+            counts,
+            min_count,
+            extra_joins,
+            extra_criteria,
+            params,
+        )
 
-    def copy_attachments(self, from_object, to_object, deepcopy=False):
+    def copy_attachments(
+        self,
+        from_object,
+        to_object,
+        deepcopy=False,
+        save_attachments=True,
+    ):
         """
         Copy all of the attachments on from_object to to_object. The
         fields will be pointing at the same file unless deepcopy is False.
@@ -150,8 +194,14 @@ class AttachmentManager(models.Manager):
 
         attachments = self.attachments_for_object(from_object)
 
-        for attachment in attachments:
-            attachment.copy(to_object, deepcopy)
+        return [
+            attachment.copy(
+                to_object,
+                deepcopy,
+                save_attachments,
+            )
+            for attachment in attachments
+        ]
 
 
 class Attachment(models.Model):
@@ -160,8 +210,8 @@ class Attachment(models.Model):
         The attachment directory to store the file in.
 
         Builds the location based on the ATTACHMENT_STORAGE_DIR setting which
-        is a callable (in the same string format as TEMPLATE_LOADERS) that takes
-        an attachment and a filename and then returns a string.
+        is a callable (in the same string format as TEMPLATE_LOADERS) that
+        takes an attachment and a filename and then returns a string.
         """
         if getattr(settings, 'ATTACHMENT_STORAGE_DIR', None):
             try:
@@ -201,12 +251,7 @@ class Attachment(models.Model):
         return self.title or self.file_name()
 
     def save(self, force_insert=False, force_update=False, **kwargs):
-        # Ensure this slug is unique amongst attachments attached to this object
-        queryset = Attachment.objects.filter(
-            content_type=self.content_type, object_id=self.object_id)
-        if self.pk:
-            queryset = queryset.exclude(pk=self.pk)
-        unique_slugify(self, self.title, queryset=queryset)
+        set_slug_field(self, self.title)
         if not self.title:
             self.title = self.file_name()
         super(Attachment, self).save(force_insert, force_update)
@@ -220,11 +265,11 @@ class Attachment(models.Model):
         """
         return os.path.basename(self.file.name)
 
-    def copy(self, to_object, deepcopy=False):
+    def copy(self, to_object, deepcopy=False, save_attachment=True):
         """
-        Create a copy of this attachment that's attached to to_object instead of
-        the current content_object. If deepcopy is set to true, the file will be
-        copied instead of both attachments pointing at the same file.
+        Create a copy of this attachment that's attached to to_object instead
+        of the current content_object. If deepcopy is set to true, the file
+        will be copied instead of both attachments pointing at the same file.
 
         Convoluted copying is needed in order for the upload_to function in the
         FileField to actually be evaluated properly.
@@ -234,7 +279,7 @@ class Attachment(models.Model):
         copy.title = self.title
         copy.slug = self.slug
         copy.summary = self.summary
-        copy.attached_by = self.attached_by
+        copy.attached_by_id = self.attached_by_id
 
         # Modify the generic FK so that it points to the 'to_object'
         kwargs_dict = Attachment.objects._generate_object_kwarg_dict(to_object)
@@ -244,14 +289,16 @@ class Attachment(models.Model):
         # Handle empty files and shallow copies.
         if not deepcopy or not self.file:
             copy.file = self.file
-            copy.save()
+            if save_attachment:
+                copy.save()
             return copy
 
         try:
             path = self.file.path
         except NotImplementedError:
             # Not a local file, download it to copy it.
-            # The file system backend doesn't support absolute paths. DL the file.
+            # The file system backend doesn't support absolute paths. DL the
+            # file.
             try:
                 remote_f = urllib2.urlopen(self.file.url)
             except IOError:
@@ -264,10 +311,12 @@ class Attachment(models.Model):
 
         new_file = File(local_f)
         new_file.seek(0)
-        copy.file.save(self.file_name(), new_file)
-        copy.save()
+        copy.file.save(self.file_name(), new_file, save=save_attachment)
+        if save_attachment:
+            copy.save()
         local_f.close()
         return copy
+
 
 class TestModel(models.Model):
     """
