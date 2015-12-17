@@ -1,21 +1,27 @@
+import json
+
+import django
 from django.shortcuts import render_to_response, get_object_or_404
 from django.http import HttpResponseRedirect, Http404, HttpResponse
 from django.template import RequestContext
 from django.contrib.auth.decorators import login_required
 from django.contrib.contenttypes.models import ContentType
 from django.core import serializers
-from django.utils import simplejson
 
 from attachments.models import Attachment
 from attachments.forms import AttachmentForm, AttachmentEditForm
 
 
 @login_required
-def new_attachment(request, content_type, object_id,
-                   template_name='attachments/new_attachment.html',
-                   form_cls=AttachmentForm,
-                   redirect=lambda object, attachment: object.get_absolute_url()):
-    object_type = get_object_or_404(ContentType, id = int(content_type))
+def new_attachment(
+    request,
+    content_type,
+    object_id,
+    template_name='attachments/new_attachment.html',
+    form_cls=AttachmentForm,
+    redirect=lambda object, attachment: object.get_absolute_url(),
+):
+    object_type = get_object_or_404(ContentType, id=int(content_type))
     try:
         object = object_type.get_object_for_this_type(pk=int(object_id))
     except object_type.DoesNotExist:
@@ -39,11 +45,15 @@ def new_attachment(request, content_type, object_id,
         "object": object
     }, context_instance=RequestContext(request))
 
+
 @login_required
-def edit_attachment(request, attachment_id,
-                   template_name='attachments/edit_attachment.html',
-                   form_cls=AttachmentEditForm,
-                   redirect=lambda object, attachment: object.get_absolute_url()):
+def edit_attachment(
+    request,
+    attachment_id,
+    template_name='attachments/edit_attachment.html',
+    form_cls=AttachmentEditForm,
+    redirect=lambda object, attachment: object.get_absolute_url(),
+):
     attachment = get_object_or_404(Attachment, pk=attachment_id)
 
     if request.method == "POST":
@@ -64,10 +74,10 @@ def edit_attachment(request, attachment_id,
         "form": attachment_form,
     }, context_instance=RequestContext(request))
 
+
 @login_required
 def delete_attachment(request, attachment_id, redirect=None):
     attachment = get_object_or_404(Attachment, pk=attachment_id)
-    object_type = attachment.content_type
     if request.method == "POST":
         attachment.delete()
 
@@ -78,13 +88,14 @@ def delete_attachment(request, attachment_id, redirect=None):
             return HttpResponseRedirect(redirect)
     else:
         message = {'success': True}
-        content = simplejson.dumps(message, ensure_ascii=False)
+        content = json.dumps(message, ensure_ascii=False)
         return HttpResponse(content, content_type='application/json')
+
 
 @login_required
 def list_attachments(request, content_type, object_id, order_by=None,
                      template_name='attachments/list_attachments.html'):
-    object_type = get_object_or_404(ContentType, id = int(content_type))
+    object_type = get_object_or_404(ContentType, id=int(content_type))
     try:
         object = object_type.get_object_for_this_type(pk=int(object_id))
     except object_type.DoesNotExist:
@@ -95,14 +106,10 @@ def list_attachments(request, content_type, object_id, order_by=None,
     if order_by:
         attachments = attachments.order_by(*order_by)
 
-    for media_type in request.accepted_types:
-        if media_type == 'application/json':
-            data = serializers.serialize('json', attachments)
-            return HttpResponse(data, mimetype='application/json')
-        else:
-            return render_to_response(template_name, {
-                'attachments': attachments,
-                'object': object
-            }, context_instance=RequestContext(request))
-
-
+    data = serializers.serialize('json', attachments)
+    response_kwargs = {}
+    if django.VERSION > (1, 4):
+        response_kwargs['content_type'] = 'application/json'
+    else:
+        response_kwargs['mimetype'] = 'application/json'
+    return HttpResponse(data, **response_kwargs)
