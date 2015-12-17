@@ -1,6 +1,5 @@
 import json
 
-import django
 from django.shortcuts import render_to_response, get_object_or_404
 from django.http import HttpResponseRedirect, Http404, HttpResponse
 from django.template import RequestContext
@@ -107,9 +106,4 @@ def list_attachments(request, content_type, object_id, order_by=None,
         attachments = attachments.order_by(*order_by)
 
     data = serializers.serialize('json', attachments)
-    response_kwargs = {}
-    if django.VERSION > (1, 4):
-        response_kwargs['content_type'] = 'application/json'
-    else:
-        response_kwargs['mimetype'] = 'application/json'
-    return HttpResponse(data, **response_kwargs)
+    return HttpResponse(data, content_type='application/json')

@@ -83,3 +83,21 @@ class TestAttachmentCopying(TestCase):
         )
         r = self.client.get(url)
         self.assertEqual(r.status_code, 200)
+
+    def test_delete_attachment(self):
+        attachment = self.create_attachment(
+            self.tm,
+            attached_by=self.bob,
+            title="Something",
+            summary="Something",
+        )
+        url = reverse(
+            'attachment_delete',
+            kwargs={
+                'attachment_id': attachment.pk,
+            },
+        )
+        r = self.client.post(url)
+        self.assertEqual(r.status_code, 200)
+        with self.assertRaises(Attachment.DoesNotExist):
+            Attachment.objects.get(pk=attachment.pk)
