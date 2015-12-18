@@ -92,8 +92,7 @@ def delete_attachment(request, attachment_id, redirect=None):
 
 
 @login_required
-def list_attachments(request, content_type, object_id, order_by=None,
-                     template_name='attachments/list_attachments.html'):
+def list_attachments(request, content_type, object_id, order_by=None):
     object_type = get_object_or_404(ContentType, id=int(content_type))
     try:
         object = object_type.get_object_for_this_type(pk=int(object_id))
