@@ -1,92 +1,103 @@
-from django.test import TestCase
-from django.test.client import Client
+from contextlib import contextmanager
+from datetime import datetime
+from tempfile import NamedTemporaryFile
+
 from django.contrib.auth.models import User
 from django.contrib.contenttypes.models import ContentType
 from django.core.files import File
+from django.core.urlresolvers import reverse
+from django.db import models
+from django.test import TestCase
 
-from attachments.models import Attachment, TestModel
-
-import os
-from tempfile import NamedTemporaryFile
-
-"""
-
->>> from attachments.models import Attachment, TestModel
->>> from django.contrib.auth.models import User
->>> from django.contrib.contenttypes.models import ContentType
-
->>> import os
->>> TEST_DIR = os.path.join(os.path.dirname(__file__))
->>> TEST_FILE1 = os.path.join(TEST_DIR, "models.py")
->>> TEST_FILE2 = os.path.join(TEST_DIR, "views.py")
-
->>> bob = User(username="bob")
->>> bob
-<User: bob>
->>> bob.save()
-
->>> tm = TestModel(name="Test1")
->>> tm.name
-'Test1'
->>> tm.save()
+from attachments.models import Attachment
 
 
->>> att1 = Attachment.objects.create_for_object(
-...     tm, file=TEST_FILE1, attached_by=bob, title="Something",
-...     summary="Something more")
->>> att1
-<Attachment: Something>
+class TestModel(models.Model):
+    """
+    This model is simply used by this application's test suite as a model to
+    which to attach files.
+    """
+    name = models.CharField(max_length=32)
+    date = models.DateTimeField(default=datetime.now)
 
-
->>> att2 = Attachment.objects.create_for_object(
-...     tm, file=TEST_FILE2, attached_by=bob, title="Something Else",
-...     summary="Something else more")
->>> att2
-<Attachment: Something Else>
-
->>> Attachment.objects.attachments_for_object(tm)
-[<Attachment: Something Else>, <Attachment: Something>]
-"""
 
 class TestAttachmentCopying(TestCase):
     def setUp(self):
-        self.client = Client(REMOTE_ADDR='localhost')
-        self.bob = User(username="bob")
+        self.bob = User.objects.create(username="bob")
+        self.bob.set_password('pw')
         self.bob.save()
+        assert self.client.login(username='bob', password='pw')
 
-        self.tm = TestModel(name="Test1")
-        self.tm.save()
-        self.tm2 = TestModel(name="Test2")
-        self.tm2.save()
+        self.content_type = ContentType.objects.get_for_model(TestModel)
+        self.tm = TestModel.objects.create(name="Test1")
+        self.tm2 = TestModel.objects.create(name="Test2")
 
-        self.test_file1 = NamedTemporaryFile('w+')
-        self.test_file1.write("some test text")
-        self.test_file1.flush()
-        self.test_file1.seek(0)
+    @contextmanager
+    def open(self, text=None):
+        if text is None:
+            text = 'some test text'
+        with NamedTemporaryFile('w+') as f:
+            f.write(text)
+            f.flush()
+            f.seek(0)
+            yield File(f)
 
-        self.test_file2 = NamedTemporaryFile('w+')
-        self.test_file2.write("some test text")
-        self.test_file2.flush()
-        self.test_file2.seek(0)
+    def create_attachment(self, obj, **kwargs):
+        att1 = Attachment.objects.create_for_object(obj, **kwargs)
+        with self.open() as f:
+            att1.file.save('models.py', f)
+        return att1
 
-    def testDeepCopying(self):
+    def test_deep_copying(self):
         """
         Test that doing a deep copy of a file actually attempt to create a
         second version of a file.
         """
-        att1 = Attachment.objects.create_for_object(
-            self.tm, file=self.test_file1, attached_by=self.bob,
-            title="Something", summary="Something")
-        f = File(self.test_file1)
-        att1.file.save('models.py', f)
+        att1 = self.create_attachment(
+            self.tm,
+            attached_by=self.bob,
+            title="Something",
+            summary="Something",
+        )
 
-        att2 = att1.copy(self.tm2, deepcopy=True)
+        att1.copy(self.tm2, deepcopy=True)
 
         # Ensure the saved_copy uses its proper file path
         attachments = Attachment.objects.attachments_for_object(self.tm2)
         for attachment in attachments:
             self.assertEqual(
                 attachment.file.name,
-                Attachment.get_attachment_dir(attachment,
-                                              attachment.file_name())
+                Attachment.get_attachment_dir(
+                    attachment,
+                    attachment.file_name(),
+                ),
             )
+
+    def test_view_smoke_test(self):
+        url = reverse(
+            'attachment_list',
+            kwargs={
+                'content_type': self.content_type.pk,
+                'object_id': self.tm.pk,
+            },
+        )
+        r = self.client.get(url)
+        self.assertEqual(r.status_code, 200)
+
+    def test_delete_attachment(self):
+        attachment = self.create_attachment(
+            self.tm,
+            attached_by=self.bob,
+            title="Something",
+            summary="Something",
+        )
+        url = reverse(
+            'attachment_delete',
+            kwargs={
+                'attachment_id': attachment.pk,
+            },
+        )
+        r = self.client.post(url)
+        self.assertEqual(r.status_code, 200)
+        with self.assertRaises(Attachment.DoesNotExist):
+            Attachment.objects.get(pk=attachment.pk)

@@ -316,12 +316,3 @@ class Attachment(models.Model):
             copy.save()
         local_f.close()
         return copy
-
-
-class TestModel(models.Model):
-    """
-    This model is simply used by this application's test suite as a model to
-    which to attach files.
-    """
-    name = models.CharField(max_length=32)
-    date = models.DateTimeField(default=datetime.now)

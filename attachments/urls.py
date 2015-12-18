@@ -1,9 +1,13 @@
-from django.conf.urls.defaults import *
+try:
+    from django.conf.urls import patterns, url
+except ImportError:  # Django 1.4
+    from django.conf.urls.defaults import patterns, url
 from django.contrib import admin
 
 admin.autodiscover()
 
-urlpatterns = patterns('attachment.views',
+urlpatterns = patterns(
+    'attachments.views',
     url(r'^(?P<content_type>\d+)/(?P<object_id>\d+)/$',
         'list_attachments',
         name='attachment_list'),
