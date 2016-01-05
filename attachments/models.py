@@ -204,26 +204,28 @@ class AttachmentManager(models.Manager):
         ]
 
 
-class Attachment(models.Model):
-    def get_attachment_dir(instance, filename):
-        """
-        The attachment directory to store the file in.
+def get_attachment_dir(instance, filename):
+    """
+    The attachment directory to store the file in.
 
-        Builds the location based on the ATTACHMENT_STORAGE_DIR setting which
-        is a callable (in the same string format as TEMPLATE_LOADERS) that
-        takes an attachment and a filename and then returns a string.
-        """
-        if getattr(settings, 'ATTACHMENT_STORAGE_DIR', None):
-            try:
-                dir_builder = get_callable_from_string(
-                    settings.ATTACHMENT_STORAGE_DIR)
-            except ImproperlyConfigured:
-                # Callable didn't load correctly
-                dir_builder = directory_schemes.by_app
-        else:
+    Builds the location based on the ATTACHMENT_STORAGE_DIR setting which
+    is a callable (in the same string format as TEMPLATE_LOADERS) that
+    takes an attachment and a filename and then returns a string.
+    """
+    if getattr(settings, 'ATTACHMENT_STORAGE_DIR', None):
+        try:
+            dir_builder = get_callable_from_string(
+                settings.ATTACHMENT_STORAGE_DIR)
+        except ImproperlyConfigured:
+            # Callable didn't load correctly
             dir_builder = directory_schemes.by_app
+    else:
+        dir_builder = directory_schemes.by_app
 
-        return dir_builder(instance, filename)
+    return dir_builder(instance, filename)
+
+
+class Attachment(models.Model):
 
     file = models.FileField(_("file"), upload_to=get_attachment_dir,
                             max_length=255)
