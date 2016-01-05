@@ -9,7 +9,7 @@ from django.core.urlresolvers import reverse
 from django.db import models
 from django.test import TestCase
 
-from attachments.models import Attachment
+from attachments.models import Attachment, get_attachment_dir
 
 
 class TestModel(models.Model):
@@ -67,7 +67,7 @@ class TestAttachmentCopying(TestCase):
         for attachment in attachments:
             self.assertEqual(
                 attachment.file.name,
-                Attachment.get_attachment_dir(
+                get_attachment_dir(
                     attachment,
                     attachment.file_name(),
                 ),
