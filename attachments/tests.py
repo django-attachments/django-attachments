@@ -2,7 +2,7 @@ from contextlib import contextmanager
 from datetime import datetime
 from tempfile import NamedTemporaryFile
 
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 from django.contrib.contenttypes.models import ContentType
 from django.core.files import File
 from django.core.urlresolvers import reverse
@@ -10,6 +10,9 @@ from django.db import models
 from django.test import TestCase
 
 from attachments.models import Attachment, get_attachment_dir
+
+
+User = get_user_model()
 
 
 class TestModel(models.Model):
