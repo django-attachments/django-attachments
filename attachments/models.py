@@ -8,7 +8,6 @@ from django.db import models, connection
 from django.core.files import File
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes import generic
-from django.contrib.auth.models import User
 from django.conf import settings
 from django.utils.translation import ugettext_lazy as _
 from django.core.exceptions import ImproperlyConfigured
@@ -238,7 +237,7 @@ class Attachment(models.Model):
     slug = models.SlugField(_("slug"), editable=False)
     summary = models.TextField(_("summary"), blank=True, null=True)
     attached_by = models.ForeignKey(
-        User, verbose_name=_("attached by"),
+        settings.AUTH_USER_MODEL, verbose_name=_("attached by"),
         related_name="attachment_attached_by", editable=False)
 
     objects = AttachmentManager()
