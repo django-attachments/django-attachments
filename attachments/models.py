@@ -7,18 +7,19 @@ import shutil
 from django.db import models, connection
 from django.core.files import File
 from django.contrib.contenttypes.models import ContentType
-from django.contrib.contenttypes import generic
+from django.contrib.contenttypes.fields import GenericForeignKey
 from django.conf import settings
 from django.utils.translation import ugettext_lazy as _
 from django.core.exceptions import ImproperlyConfigured
-
-qn = connection.ops.quote_name
 
 import os.path
 from datetime import datetime
 
 import directory_schemes
 from utils import get_callable_from_string, set_slug_field
+
+
+qn = connection.ops.quote_name
 
 # Get relative media path
 try:
@@ -230,7 +231,7 @@ class Attachment(models.Model):
                             max_length=255)
     content_type = models.ForeignKey(ContentType)
     object_id = models.PositiveIntegerField(db_index=True)
-    content_object = generic.GenericForeignKey("content_type", "object_id")
+    content_object = GenericForeignKey("content_type", "object_id")
     attached_timestamp = models.DateTimeField(_("date attached"),
                                               default=datetime.now)
     title = models.CharField(_("title"), max_length=200, blank=True, null=True)
