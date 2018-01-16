@@ -1,6 +1,6 @@
 import json
 
-from django.shortcuts import render_to_response, get_object_or_404
+from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponseRedirect, Http404, HttpResponse
 from django.contrib.auth.decorators import login_required
 from django.contrib.contenttypes.models import ContentType
@@ -38,10 +38,9 @@ def new_attachment(
     else:
         attachment_form = form_cls()
 
-    return render_to_response(template_name, {
+    return render(request, template_name, {
         "form": attachment_form,
         "object": object,
-        'request': request,
     })
 
 
@@ -69,9 +68,8 @@ def edit_attachment(
     else:
         attachment_form = form_cls(instance=attachment)
 
-    return render_to_response(template_name, {
+    return render(request, template_name, {
         "form": attachment_form,
-        'request': request,
     })
 
 
