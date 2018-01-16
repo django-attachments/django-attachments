@@ -40,7 +40,8 @@ def new_attachment(
 
     return render_to_response(template_name, {
         "form": attachment_form,
-        "object": object
+        "object": object,
+        'request': request,
     })
 
 
@@ -70,6 +71,7 @@ def edit_attachment(
 
     return render_to_response(template_name, {
         "form": attachment_form,
+        'request': request,
     })
 
 
