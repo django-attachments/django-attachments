@@ -2,7 +2,6 @@ import json
 
 from django.shortcuts import render_to_response, get_object_or_404
 from django.http import HttpResponseRedirect, Http404, HttpResponse
-from django.template import RequestContext
 from django.contrib.auth.decorators import login_required
 from django.contrib.contenttypes.models import ContentType
 from django.core import serializers
@@ -42,7 +41,7 @@ def new_attachment(
     return render_to_response(template_name, {
         "form": attachment_form,
         "object": object
-    }, context_instance=RequestContext(request))
+    })
 
 
 @login_required
@@ -71,7 +70,7 @@ def edit_attachment(
 
     return render_to_response(template_name, {
         "form": attachment_form,
-    }, context_instance=RequestContext(request))
+    })
 
 
 @login_required
