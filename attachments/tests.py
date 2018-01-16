@@ -104,3 +104,30 @@ class TestAttachmentCopying(TestCase):
         self.assertEqual(r.status_code, 200)
         with self.assertRaises(Attachment.DoesNotExist):
             Attachment.objects.get(pk=attachment.pk)
+
+    def test_GET_create_attachment(self):
+        url = reverse(
+            'attachment_new',
+            kwargs={
+                'content_type': self.content_type.pk,
+                'object_id': self.tm.pk,
+            },
+        )
+        r = self.client.get(url)
+        self.assertEqual(r.status_code, 200)
+
+    def test_GET_edit_attachment(self):
+        attachment = self.create_attachment(
+            self.tm,
+            attached_by=self.bob,
+            title="Something",
+            summary="Something",
+        )
+        url = reverse(
+            'attachment_edit',
+            kwargs={
+                'attachment_id': attachment.pk,
+            },
+        )
+        r = self.client.get(url)
+        self.assertEqual(r.status_code, 200)

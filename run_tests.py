@@ -26,6 +26,16 @@ if not settings.configured:
         TEST_RUNNER='django_nose.NoseTestSuiteRunner',
         SITE_ID=1,
         MAILER_EMAIL_BACKEND='mailer.tests.TestMailerEmailBackend',
+        TEMPLATES=[
+            {
+                'BACKEND': 'django.template.backends.django.DjangoTemplates',
+                'DIRS': [],
+                'APP_DIRS': True,
+                'OPTIONS': {
+                    # ... some options here ...
+                },
+            },
+        ],
     )
 
 
