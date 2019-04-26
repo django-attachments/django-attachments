@@ -15,6 +15,7 @@ if not settings.configured:
             'django.contrib.auth',
             'django.contrib.contenttypes',
             'django.contrib.sites',
+            'django.contrib.admin',
             'attachments',
             'django_nose',
         ),
