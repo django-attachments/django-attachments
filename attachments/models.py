@@ -16,8 +16,8 @@ from django.core.exceptions import ImproperlyConfigured
 import os.path
 from datetime import datetime
 
-import directory_schemes
-from utils import get_callable_from_string, set_slug_field
+from .directory_schemes import by_app
+from .utils import get_callable_from_string, set_slug_field
 
 
 qn = connection.ops.quote_name
@@ -219,9 +219,9 @@ def get_attachment_dir(instance, filename):
                 settings.ATTACHMENT_STORAGE_DIR)
         except ImproperlyConfigured:
             # Callable didn't load correctly
-            dir_builder = directory_schemes.by_app
+            dir_builder = by_app
     else:
-        dir_builder = directory_schemes.by_app
+        dir_builder = by_app
 
     return dir_builder(instance, filename)
 
