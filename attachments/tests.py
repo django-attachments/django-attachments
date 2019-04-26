@@ -5,7 +5,7 @@ from tempfile import NamedTemporaryFile
 from django.contrib.auth import get_user_model
 from django.contrib.contenttypes.models import ContentType
 from django.core.files import File
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.db import models
 from django.test import TestCase
 
