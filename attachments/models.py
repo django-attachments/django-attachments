@@ -230,7 +230,10 @@ class Attachment(models.Model):
 
     file = models.FileField(_("file"), upload_to=get_attachment_dir,
                             max_length=255)
-    content_type = models.ForeignKey(ContentType)
+    content_type = models.ForeignKey(
+        ContentType,
+        on_delete=models.CASCADE,
+    )
     object_id = models.PositiveIntegerField(db_index=True)
     content_object = GenericForeignKey("content_type", "object_id")
     attached_timestamp = models.DateTimeField(_("date attached"),
@@ -239,8 +242,12 @@ class Attachment(models.Model):
     slug = models.SlugField(_("slug"), editable=False)
     summary = models.TextField(_("summary"), blank=True, null=True)
     attached_by = models.ForeignKey(
-        settings.AUTH_USER_MODEL, verbose_name=_("attached by"),
-        related_name="attachment_attached_by", editable=False)
+        settings.AUTH_USER_MODEL,
+        verbose_name=_("attached by"),
+        related_name="attachment_attached_by",
+        editable=False,
+        on_delete=models.CASCADE,
+    )
 
     objects = AttachmentManager()
 
