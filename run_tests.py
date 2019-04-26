@@ -19,7 +19,7 @@ if not settings.configured:
             'attachments',
             'django_nose',
         ),
-        MIDDLEWARE_CLASSES=(
+        MIDDLEWARE=(
             'django.contrib.sessions.middleware.SessionMiddleware',
             'django.contrib.auth.middleware.AuthenticationMiddleware',
         ),
