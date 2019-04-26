@@ -1,8 +1,9 @@
 from __future__ import with_statement
 
 import tempfile
-import urllib2
 import shutil
+
+from six.moves.urllib.request import urlopen
 
 from django.db import models, connection
 from django.core.files import File
@@ -24,7 +25,7 @@ qn = connection.ops.quote_name
 # Get relative media path
 try:
     ATTACHMENT_DIR = settings.ATTACHMENT_DIR
-except:
+except Exception:
     ATTACHMENT_DIR = "attachments"
 
 
@@ -302,10 +303,10 @@ class Attachment(models.Model):
             # The file system backend doesn't support absolute paths. DL the
             # file.
             try:
-                remote_f = urllib2.urlopen(self.file.url)
+                remote_f = urlopen(self.file.url)
             except IOError:
                 # Possible S3 propogation delay problem. Give it another try
-                remote_f = urllib2.urlopen(self.file.url)
+                remote_f = urlopen(self.file.url)
             local_f = tempfile.NamedTemporaryFile()
             shutil.copyfileobj(remote_f, local_f)
         else:
