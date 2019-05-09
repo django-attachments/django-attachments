@@ -1,5 +1,7 @@
 from functools import cmp_to_key
 
+from django.utils.deprecation import MiddlewareMixin
+
 
 def parse_accept_header(accept):
     """Parse the Accept header *accept*, returning a list with pairs of
@@ -22,11 +24,8 @@ def parse_accept_header(accept):
     return result
 
 
-class AcceptMiddleware(object):
-    def __init__(self, get_response):
-        self.get_response = get_response
-
-    def __call__(self, request):
+class AcceptMiddleware(MiddlewareMixin):
+    def process_request(self, request):
         accept = parse_accept_header(request.META.get("HTTP_ACCEPT", ""))
         request.accept = accept
 
@@ -34,5 +33,3 @@ class AcceptMiddleware(object):
             t, p, q = toople
             return t
         request.accepted_types = list(map(mapper, accept))
-        response = self.get_response(request)
-        return response
