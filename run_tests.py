@@ -22,6 +22,7 @@ if not settings.configured:
         MIDDLEWARE=(
             'django.contrib.sessions.middleware.SessionMiddleware',
             'django.contrib.auth.middleware.AuthenticationMiddleware',
+            'attachments.middleware.AcceptMiddleware',
         ),
         ROOT_URLCONF='attachments.urls',
         TEST_RUNNER='django_nose.NoseTestSuiteRunner',
