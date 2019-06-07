@@ -12,6 +12,7 @@ from django.contrib.contenttypes.fields import GenericForeignKey
 from django.conf import settings
 from django.utils.translation import ugettext_lazy as _
 from django.core.exceptions import ImproperlyConfigured
+from django.utils.encoding import python_2_unicode_compatible
 
 import os.path
 from datetime import datetime
@@ -226,6 +227,7 @@ def get_attachment_dir(instance, filename):
     return dir_builder(instance, filename)
 
 
+@python_2_unicode_compatible
 class Attachment(models.Model):
 
     file = models.FileField(_("file"), upload_to=get_attachment_dir,
@@ -257,7 +259,7 @@ class Attachment(models.Model):
         verbose_name = _('attachment')
         verbose_name_plural = _('attachments')
 
-    def __unicode__(self):
+    def __str__(self):
         return self.title or self.file_name()
 
     def save(self, force_insert=False, force_update=False, **kwargs):
