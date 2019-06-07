@@ -8,6 +8,7 @@ from django.core.files import File
 from django.urls import reverse
 from django.db import models
 from django.test import TestCase
+from django.utils.encoding import force_text
 
 from attachments.models import Attachment, get_attachment_dir
 
@@ -131,3 +132,11 @@ class TestAttachmentCopying(TestCase):
         )
         r = self.client.get(url)
         self.assertEqual(r.status_code, 200)
+
+    def test_text_of_attachment_is_title(self):
+        attachment = self.create_attachment(
+            self.tm,
+            attached_by=self.bob,
+            title='Foo bar title',
+        )
+        self.assertEqual(force_text(attachment), 'Foo bar title')
