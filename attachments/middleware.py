@@ -3,6 +3,12 @@ from functools import cmp_to_key
 from django.utils.deprecation import MiddlewareMixin
 
 
+def cmp(a, b):
+    # cmp() is removed in python 3
+    # https://docs.python.org/3.0/whatsnew/3.0.html#ordering-comparisons
+    return (a > b) - (a < b)
+
+
 def parse_accept_header(accept):
     """Parse the Accept header *accept*, returning a list with pairs of
     (media_type, q_value), ordered by q values.

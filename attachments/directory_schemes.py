@@ -1,7 +1,7 @@
 from django.conf import settings
-from django.core.exceptions import ObjectDoesNotExist
 
 import os.path
+
 
 def site_based(attachment, filename):
     site_name = getattr(settings, "SITE_NAME", 'default')
@@ -32,6 +32,7 @@ def by_app(attachment, filename):
         str(attachment.content_object.pk),
         filename
     )
+
 
 def one_folder(attachment, filename):
     return os.path.join('attachments', filename)
