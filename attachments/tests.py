@@ -8,7 +8,7 @@ from django.core.files import File
 from django.urls import reverse
 from django.db import models
 from django.test import TestCase
-from django.utils.encoding import force_text
+from django.utils.encoding import force_str
 
 from attachments.models import Attachment, get_attachment_dir
 
@@ -139,4 +139,4 @@ class TestAttachmentCopying(TestCase):
             attached_by=self.bob,
             title='Foo bar title',
         )
-        self.assertEqual(force_text(attachment), 'Foo bar title')
+        self.assertEqual(force_str(attachment), 'Foo bar title')
