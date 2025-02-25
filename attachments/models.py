@@ -1,10 +1,6 @@
 from __future__ import with_statement
 
-import tempfile
-import shutil
-
-from six.moves.urllib.request import urlopen
-
+from six import BytesIO
 from django.db import models, connection
 from django.core.files import File
 from django.contrib.contenttypes.models import ContentType
@@ -303,26 +299,15 @@ class Attachment(models.Model):
                 copy.save()
             return copy
 
-        try:
-            path = self.file.path
-        except NotImplementedError:
-            # Not a local file, download it to copy it.
-            # The file system backend doesn't support absolute paths. DL the
-            # file.
-            try:
-                remote_f = urlopen(self.file.url)
-            except IOError:
-                # Possible S3 propogation delay problem. Give it another try
-                remote_f = urlopen(self.file.url)
-            local_f = tempfile.NamedTemporaryFile()
-            shutil.copyfileobj(remote_f, local_f)
-        else:
-            local_f = open(path)
+        f = BytesIO(self.file.read())
+        f.seek(0)
 
-        new_file = File(local_f)
+        new_file = File(f)
         new_file.seek(0)
+
+        copy.file.name = self.file.name
         copy.file.save(self.file_name(), new_file, save=save_attachment)
+
         if save_attachment:
             copy.save()
-        local_f.close()
         return copy
