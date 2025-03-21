@@ -5,6 +5,7 @@ from django.core.management import execute_from_command_line
 
 if not settings.configured:
     settings.configure(
+        SECRET_KEY='this-is-a-key-for-testing-purposes-only',
         DATABASES={
             'default': {
                 'ENGINE': 'django.db.backends.sqlite3',
