@@ -1,30 +1,31 @@
 from __future__ import with_statement
 
 import tempfile
-import urllib2
 import shutil
+
+from six.moves.urllib.request import urlopen
 
 from django.db import models, connection
 from django.core.files import File
 from django.contrib.contenttypes.models import ContentType
-from django.contrib.contenttypes import generic
-from django.contrib.auth.models import User
+from django.contrib.contenttypes.fields import GenericForeignKey
 from django.conf import settings
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from django.core.exceptions import ImproperlyConfigured
-
-qn = connection.ops.quote_name
 
 import os.path
 from datetime import datetime
 
-import directory_schemes
-from utils import get_callable_from_string, set_slug_field
+from .directory_schemes import by_app
+from .utils import get_callable_from_string, set_slug_field
+
+
+qn = connection.ops.quote_name
 
 # Get relative media path
 try:
     ATTACHMENT_DIR = settings.ATTACHMENT_DIR
-except:
+except Exception:
     ATTACHMENT_DIR = "attachments"
 
 
@@ -204,40 +205,49 @@ class AttachmentManager(models.Manager):
         ]
 
 
+def get_attachment_dir(instance, filename):
+    """
+    The attachment directory to store the file in.
+
+    Builds the location based on the ATTACHMENT_STORAGE_DIR setting which
+    is a callable (in the same string format as TEMPLATE_LOADERS) that
+    takes an attachment and a filename and then returns a string.
+    """
+    if getattr(settings, 'ATTACHMENT_STORAGE_DIR', None):
+        try:
+            dir_builder = get_callable_from_string(
+                settings.ATTACHMENT_STORAGE_DIR)
+        except ImproperlyConfigured:
+            # Callable didn't load correctly
+            dir_builder = by_app
+    else:
+        dir_builder = by_app
+
+    return dir_builder(instance, filename)
+
+
 class Attachment(models.Model):
-    def get_attachment_dir(instance, filename):
-        """
-        The attachment directory to store the file in.
-
-        Builds the location based on the ATTACHMENT_STORAGE_DIR setting which
-        is a callable (in the same string format as TEMPLATE_LOADERS) that
-        takes an attachment and a filename and then returns a string.
-        """
-        if getattr(settings, 'ATTACHMENT_STORAGE_DIR', None):
-            try:
-                dir_builder = get_callable_from_string(
-                    settings.ATTACHMENT_STORAGE_DIR)
-            except ImproperlyConfigured:
-                # Callable didn't load correctly
-                dir_builder = directory_schemes.by_app
-        else:
-            dir_builder = directory_schemes.by_app
-
-        return dir_builder(instance, filename)
 
     file = models.FileField(_("file"), upload_to=get_attachment_dir,
                             max_length=255)
-    content_type = models.ForeignKey(ContentType)
+    content_type = models.ForeignKey(
+        ContentType,
+        on_delete=models.CASCADE,
+    )
     object_id = models.PositiveIntegerField(db_index=True)
-    content_object = generic.GenericForeignKey("content_type", "object_id")
+    content_object = GenericForeignKey("content_type", "object_id")
     attached_timestamp = models.DateTimeField(_("date attached"),
                                               default=datetime.now)
     title = models.CharField(_("title"), max_length=200, blank=True, null=True)
     slug = models.SlugField(_("slug"), editable=False)
     summary = models.TextField(_("summary"), blank=True, null=True)
     attached_by = models.ForeignKey(
-        User, verbose_name=_("attached by"),
-        related_name="attachment_attached_by", editable=False)
+        settings.AUTH_USER_MODEL,
+        verbose_name=_("attached by"),
+        related_name="attachment_attached_by",
+        editable=False,
+        on_delete=models.CASCADE,
+    )
 
     objects = AttachmentManager()
 
@@ -247,7 +257,7 @@ class Attachment(models.Model):
         verbose_name = _('attachment')
         verbose_name_plural = _('attachments')
 
-    def __unicode__(self):
+    def __str__(self):
         return self.title or self.file_name()
 
     def save(self, force_insert=False, force_update=False, **kwargs):
@@ -300,10 +310,10 @@ class Attachment(models.Model):
             # The file system backend doesn't support absolute paths. DL the
             # file.
             try:
-                remote_f = urllib2.urlopen(self.file.url)
+                remote_f = urlopen(self.file.url)
             except IOError:
                 # Possible S3 propogation delay problem. Give it another try
-                remote_f = urllib2.urlopen(self.file.url)
+                remote_f = urlopen(self.file.url)
             local_f = tempfile.NamedTemporaryFile()
             shutil.copyfileobj(remote_f, local_f)
         else:
@@ -316,12 +326,3 @@ class Attachment(models.Model):
             copy.save()
         local_f.close()
         return copy
-
-
-class TestModel(models.Model):
-    """
-    This model is simply used by this application's test suite as a model to
-    which to attach files.
-    """
-    name = models.CharField(max_length=32)
-    date = models.DateTimeField(default=datetime.now)

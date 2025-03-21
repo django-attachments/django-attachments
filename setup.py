@@ -1,8 +1,8 @@
 from distutils.core import setup
 import glob
 
-data = [ "locale/" + l.rsplit('/')[-1]+"/LC_MESSAGES/*.*"
-         for l in glob.glob("attachments/locale/*.?o")]
+data = ["locale/" + l.rsplit('/')[-1]+"/LC_MESSAGES/*.*"
+        for l in glob.glob("attachments/locale/*.?o")]
 data.append('templates/attachments/*.html')
 
 setup(

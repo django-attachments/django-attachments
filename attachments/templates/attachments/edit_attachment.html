@@ -1,15 +1,15 @@
 {% extends "site_base.html" %}
 
 
-{% block head_title %}Attach a file to {{ object }}{% endblock %}
+{% block head_title %}Edit Attachment{% endblock %}
 
 {% block body %}
 
-    <h1>Attach a file to {{ object }}</h1>
+    <h1>Edit Attachment</h1>
 
     <form style="margin-top: 1em;" enctype="multipart/form-data" id="attachment_form" method="POST" action="">
         <table>
-            {{ attachment_form }}
+            {{ form }}
             <tr><td></td><td><input type="submit" value="Submit"/></td></tr>
         </table>
     </form>

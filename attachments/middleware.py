@@ -1,3 +1,14 @@
+from functools import cmp_to_key
+
+from django.utils.deprecation import MiddlewareMixin
+
+
+def cmp(a, b):
+    # cmp() is removed in python 3
+    # https://docs.python.org/3.0/whatsnew/3.0.html#ordering-comparisons
+    return (a > b) - (a < b)
+
+
 def parse_accept_header(accept):
     """Parse the Accept header *accept*, returning a list with pairs of
     (media_type, q_value), ordered by q values.
@@ -15,11 +26,16 @@ def parse_accept_header(accept):
             else:
                 media_params.append((key, value))
         result.append((media_type, tuple(media_params), q))
-    result.sort(lambda x, y: -cmp(x[2], y[2]))
+    result.sort(key=cmp_to_key(lambda x, y: -cmp(x[2], y[2])))
     return result
 
-class AcceptMiddleware(object):
+
+class AcceptMiddleware(MiddlewareMixin):
     def process_request(self, request):
         accept = parse_accept_header(request.META.get("HTTP_ACCEPT", ""))
         request.accept = accept
-        request.accepted_types = map(lambda (t, p, q): t, accept)
+
+        def mapper(toople):
+            t, p, q = toople
+            return t
+        request.accepted_types = list(map(mapper, accept))

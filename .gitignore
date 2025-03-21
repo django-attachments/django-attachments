@@ -3,3 +3,7 @@
 *~
 README.html
 github.rst.css
+MANIFEST
+.tox/
+.python-version
+attachments/attachments_testmodel/
