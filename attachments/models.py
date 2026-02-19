@@ -10,11 +10,11 @@ from django.core.files import File
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.conf import settings
+from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from django.core.exceptions import ImproperlyConfigured
 
 import os.path
-from datetime import datetime
 
 from .directory_schemes import by_app
 from .utils import get_callable_from_string, set_slug_field
@@ -237,7 +237,7 @@ class Attachment(models.Model):
     object_id = models.PositiveIntegerField(db_index=True)
     content_object = GenericForeignKey("content_type", "object_id")
     attached_timestamp = models.DateTimeField(_("date attached"),
-                                              default=datetime.now)
+                                              default=timezone.now)
     title = models.CharField(_("title"), max_length=200, blank=True, null=True)
     slug = models.SlugField(_("slug"), editable=False)
     summary = models.TextField(_("summary"), blank=True, null=True)
