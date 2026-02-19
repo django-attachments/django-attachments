@@ -1,11 +1,11 @@
 from contextlib import contextmanager
-from datetime import datetime
 from tempfile import NamedTemporaryFile
 
 from django.contrib.auth import get_user_model
 from django.contrib.contenttypes.models import ContentType
 from django.core.files import File
 from django.urls import reverse
+from django.utils import timezone
 from django.db import models
 from django.test import TestCase
 from django.utils.encoding import force_str
@@ -22,7 +22,7 @@ class TestModel(models.Model):
     which to attach files.
     """
     name = models.CharField(max_length=32)
-    date = models.DateTimeField(default=datetime.now)
+    date = models.DateTimeField(default=timezone.now)
 
 
 class TestAttachmentCopying(TestCase):
